@@ -296,7 +296,7 @@ class GL33CGSimulator {
 
 // Configuração do simulador
 const simulatorConfig: SimulatorConfig = {
-  serverHost: process.env.SERVER_HOST || "localhost",
+  serverHost: process.env.SERVER_HOST || "54.234.237.208",
   serverPort: parseInt(process.env.SERVER_PORT || "8080"),
   deviceImei: "865585040014007",
   deviceName: "GL33CG_SIM",

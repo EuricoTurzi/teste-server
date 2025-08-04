@@ -426,6 +426,50 @@ class GL33CGTcpServer {
         console.log(`🗺️ [${clientId}] Alerta: Geocerca`);
         break;
 
+      case "GTPNA":
+        logger.info(
+          LogType.DEVICE,
+          "Power on alert",
+          logData,
+          clientId,
+          message.uniqueId
+        );
+        console.log(`🔌 [${clientId}] Alerta: Dispositivo ligado`);
+        break;
+
+      case "GTSTT":
+        logger.info(
+          LogType.DEVICE,
+          "Status report",
+          logData,
+          clientId,
+          message.uniqueId
+        );
+        console.log(`📊 [${clientId}] Relatório de status`);
+        break;
+
+      case "GTGSM":
+        logger.info(
+          LogType.DEVICE,
+          "GSM information report",
+          logData,
+          clientId,
+          message.uniqueId
+        );
+        console.log(`📶 [${clientId}] Relatório GSM`);
+        break;
+
+      case "GTPNL":
+        logger.info(
+          LogType.DEVICE,
+          "Position normal report",
+          logData,
+          clientId,
+          message.uniqueId
+        );
+        console.log(`🗺️ [${clientId}] Relatório de posição normal`);
+        break;
+
       default:
         logger.debug(
           LogType.PROTOCOL,
