@@ -390,16 +390,24 @@ export class DataManager {
         return null;
       }
 
-      const speed = parseFloat(parts[8] ?? "0");
-      const heading = parseInt(parts[9] ?? "0");
-      const altitude = parseFloat(parts[10] ?? "0");
-      const longitude = parseFloat(parts[11] ?? "0");
-      const latitude = parseFloat(parts[12] ?? "0");
-      const hdop = parseFloat(parts[7] ?? "0");
+      // ===== parsing GPS fixo =====
+      const hdop = parseFloat(parts[7] ?? "0"); // HDOP
+      const speed = parseFloat(parts[8] ?? "0"); // Speed
+      const heading = parseInt(parts[9] ?? "0", 10); // Azimuth
+      const altitude = parseFloat(parts[10] ?? "0"); // Altitude
+      const longitude = parseFloat(parts[11] ?? "0"); // Longitude
+      const latitude = parseFloat(parts[12] ?? "0"); // Latitude
 
-      // Extrair informações adicionais se disponíveis
-      const batteryLevel = parts[21] ? parseFloat(parts[21]) : undefined;
-      const gsmSignal = undefined; // Não disponível diretamente na mensagem GTFRI
+      // UTC time do GPS (se você quiser usar como report_time)
+      const gpsTimestamp = parts[13] ?? "";
+
+      // ===== parsing célula & bateria =====
+      const mcc = parts[14] || null; // MCC
+      const mnc = parts[15] || null; // MNC
+      const lac = parts[16] || null; // LAC (hex)
+      const cellId = parts[17] || null; // Cell ID (hex)
+      const batteryLevel = parts[19] ? parseFloat(parts[19]) : null; // Battery %
+      const gsmSignal = null; // se não vier no FRI
 
       return {
         latitude,
@@ -408,8 +416,13 @@ export class DataManager {
         heading,
         altitude,
         hdop,
+        mcc,
+        mnc,
+        lac,
+        cellId,
         batteryLevel,
         gsmSignal,
+        gpsTimestamp,
       };
     } catch (error) {
       logger.error(
