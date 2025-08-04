@@ -323,18 +323,29 @@ export class DataManager {
     originalMessage: BaseMessage
   ): Promise<void> {
     try {
-      // Parse da mensagem GTFRI para extrair dados de localização
+      console.log("🐛 DEBUG: Iniciando processLocationReport", {
+        deviceId: device.id,
+        command: originalMessage.commandWord,
+        rawMessage: originalMessage.rawMessage,
+      });
+
+      // Parse da mensagem para extrair dados de localização
       const locationData = this.parseLocationFromMessage(
         originalMessage.rawMessage
       );
+
+      console.log("🐛 DEBUG: Dados de localização parseados:", locationData);
 
       if (!locationData) {
         logger.warn(LogType.APPLICATION, "Could not parse location data", {
           deviceId: device.id,
           rawMessage: originalMessage.rawMessage,
         });
+        console.log("❌ DEBUG: Falha no parse dos dados de localização");
         return;
       }
+
+      console.log("🐛 DEBUG: Tentando salvar no banco...");
 
       // Salvar relatório de localização
       const locationResult = await database.saveLocationReport({
@@ -346,14 +357,16 @@ export class DataManager {
         heading: locationData.heading,
         altitude: locationData.altitude,
         hdop: locationData.hdop,
-        mcc: locationData.mcc, // ✅ NOVO
-        mnc: locationData.mnc, // ✅ NOVO
-        lac: locationData.lac, // ✅ NOVO
-        cell_id: locationData.cellId, // ✅ NOVO
+        mcc: locationData.mcc, // ✅ ADICIONADO
+        mnc: locationData.mnc, // ✅ ADICIONADO
+        lac: locationData.lac, // ✅ ADICIONADO
+        cell_id: locationData.cellId, // ✅ ADICIONADO
         battery_level: locationData.batteryLevel,
         gsm_signal: locationData.gsmSignal,
         report_time: this.parseTimestamp(originalMessage.sendTime),
       });
+
+      console.log("🐛 DEBUG: Resultado do salvamento:", locationResult);
 
       if (locationResult.success) {
         logger.info(LogType.APPLICATION, "Location report saved", {
@@ -361,12 +374,24 @@ export class DataManager {
           latitude: locationData.latitude,
           longitude: locationData.longitude,
           speed: locationData.speed,
+          mcc: locationData.mcc,
+          mnc: locationData.mnc,
+          lac: locationData.lac,
+          cellId: locationData.cellId,
         });
+
+        console.log("✅ DEBUG: Location report salvo com sucesso!");
 
         // Verificar alertas baseados na localização
         await this.checkLocationBasedAlerts(device, message, locationData);
+      } else {
+        console.log(
+          "❌ DEBUG: Falha ao salvar location report:",
+          locationResult.error
+        );
       }
     } catch (error) {
+      console.log("❌ DEBUG: Erro na processLocationReport:", error);
       logger.error(
         LogType.APPLICATION,
         "Error processing location report",
@@ -383,12 +408,17 @@ export class DataManager {
    */
   private parseLocationFromMessage(rawMessage: string): any | null {
     try {
+      console.log("🐛 DEBUG: Parseando mensagem:", rawMessage);
+
       const parts = rawMessage
         .replace("+RESP:", "")
         .replace("$", "")
         .split(",");
 
+      console.log("🐛 DEBUG: Partes da mensagem:", parts.length, parts);
+
       if (parts.length < 18) {
+        console.log("❌ DEBUG: Mensagem muito curta, partes:", parts.length);
         return null;
       }
 
@@ -406,7 +436,7 @@ export class DataManager {
       const cellId = parts[17] ?? ""; // Cell ID na posição 17
       const batteryLevel = parts[19] ? parseFloat(parts[19]) : undefined; // Battery na posição 19
 
-      return {
+      const result = {
         latitude,
         longitude,
         speed,
@@ -420,7 +450,11 @@ export class DataManager {
         lac, // ✅ NOVO
         cellId, // ✅ NOVO
       };
+
+      console.log("🐛 DEBUG: Resultado do parse:", result);
+      return result;
     } catch (error) {
+      console.log("❌ DEBUG: Erro no parse:", error);
       logger.error(
         LogType.APPLICATION,
         "Error parsing location data",
