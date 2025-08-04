@@ -51,13 +51,24 @@ class GL33CGTcpServer {
   }
 
   /**
+   * Verifica se a mensagem é um health check HTTP
+   */
+  private isHttpHealthCheck(data: string): boolean {
+    return (
+      data.includes("HTTP/") ||
+      data.includes("GET ") ||
+      data.includes("HEAD ") ||
+      data.includes("POST ") ||
+      data.includes("User-Agent:")
+    );
+  }
+
+  /**
    * Manipula nova conexão de cliente
    */
   private handleConnection(socket: net.Socket): void {
     const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
-
-    logger.logConnection(clientId, socket.remoteAddress || "unknown");
-    console.log(`🔗 Nova conexão: ${clientId}`);
+    let isHttpConnection = false;
 
     // Verificar limite de conexões
     if (this.clients.size >= this.config.maxConnections) {
@@ -76,6 +87,86 @@ class GL33CGTcpServer {
       return;
     }
 
+    // Handler para detectar tipo de conexão no primeiro data
+    const initialDataHandler = (data: Buffer) => {
+      const dataStr = data.toString("ascii");
+
+      // Verificar se é health check HTTP
+      if (this.isHttpHealthCheck(dataStr)) {
+        isHttpConnection = true;
+
+        // Responder ao health check HTTP
+        const stats = this.getStats();
+        const httpResponse =
+          `HTTP/1.1 200 OK\r\n` +
+          `Content-Type: application/json\r\n` +
+          `Access-Control-Allow-Origin: *\r\n` +
+          `Content-Length: ${
+            JSON.stringify({
+              status: "healthy",
+              uptime: Math.round(process.uptime()),
+              connections: stats.totalConnections,
+              devices: stats.identifiedDevices,
+              timestamp: new Date().toISOString(),
+            }).length
+          }\r\n\r\n` +
+          JSON.stringify({
+            status: "healthy",
+            uptime: Math.round(process.uptime()),
+            connections: stats.totalConnections,
+            devices: stats.identifiedDevices,
+            timestamp: new Date().toISOString(),
+          });
+
+        socket.write(httpResponse);
+        socket.end();
+
+        // Log mais limpo para health checks
+        if (process.env.NODE_ENV === "development") {
+          console.log(`🌐 [${clientId}] Health check HTTP - respondido`);
+        }
+        return;
+      }
+
+      // Se chegou aqui, é uma conexão TCP válida
+      socket.removeListener("data", initialDataHandler);
+      this.setupTcpClient(clientId, socket);
+
+      // Processar os dados iniciais como mensagem TCP
+      this.handleClientData(clientId, data);
+    };
+
+    // Escutar primeiro pacote de dados
+    socket.once("data", initialDataHandler);
+
+    // Configurar timeout para conexões não identificadas
+    socket.setTimeout(5000, () => {
+      if (!isHttpConnection && !this.clients.has(clientId)) {
+        socket.destroy();
+      }
+    });
+
+    // Handlers de erro e close para conexões não TCP
+    socket.on("error", (error) => {
+      if (!isHttpConnection) {
+        this.handleClientError(clientId, error);
+      }
+    });
+
+    socket.on("close", () => {
+      if (!isHttpConnection && this.clients.has(clientId)) {
+        this.handleClientDisconnect(clientId);
+      }
+    });
+  }
+
+  /**
+   * Configura cliente TCP após identificação
+   */
+  private setupTcpClient(clientId: string, socket: net.Socket): void {
+    logger.logConnection(clientId, socket.remoteAddress || "unknown");
+    console.log(`🔗 Nova conexão TCP: ${clientId}`);
+
     // Criar objeto do cliente
     const client: ConnectedClient = {
       socket,
@@ -87,12 +178,12 @@ class GL33CGTcpServer {
 
     this.clients.set(clientId, client);
 
-    // Configurar eventos do socket
+    // Configurar eventos do socket TCP
     socket.on("data", (data) => this.handleClientData(clientId, data));
     socket.on("close", () => this.handleClientDisconnect(clientId));
     socket.on("error", (error) => this.handleClientError(clientId, error));
 
-    // Configurar timeout de conexão
+    // Configurar timeout de conexão TCP
     socket.setTimeout(this.config.connectionLife * 1000, () => {
       logger.warn(
         LogType.CONNECTION,
@@ -109,7 +200,7 @@ class GL33CGTcpServer {
   }
 
   /**
-   * Manipula dados recebidos do cliente
+   * Manipula dados recebidos do cliente TCP
    */
   private async handleClientData(
     clientId: string,
@@ -456,6 +547,10 @@ class GL33CGTcpServer {
     console.log(`   - Máx conexões: ${this.config.maxConnections}`);
     console.log(`   - Timeout conexão: ${this.config.connectionLife}s`);
     console.log("📡 Aguardando dispositivos GL33CG...");
+
+    if (process.env.NODE_ENV === "production") {
+      console.log("🌐 Health check HTTP endpoint ativo");
+    }
   }
 
   /**
