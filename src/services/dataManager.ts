@@ -390,12 +390,12 @@ export class DataManager {
         return null;
       }
 
-      const speed = parseFloat(parts[9] ?? "0");
-      const heading = parseInt(parts[10] ?? "0");
-      const altitude = parseFloat(parts[11] ?? "0");
-      const longitude = parseFloat(parts[12] ?? "0");
-      const latitude = parseFloat(parts[13] ?? "0");
-      const hdop = parseFloat(parts[8] ?? "0");
+      const speed = parseFloat(parts[8] ?? "0");
+      const heading = parseInt(parts[9] ?? "0");
+      const altitude = parseFloat(parts[10] ?? "0");
+      const longitude = parseFloat(parts[11] ?? "0");
+      const latitude = parseFloat(parts[12] ?? "0");
+      const hdop = parseFloat(parts[7] ?? "0");
 
       // Extrair informações adicionais se disponíveis
       const batteryLevel = parts[21] ? parseFloat(parts[21]) : undefined;
