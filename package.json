@@ -1,0 +1,39 @@
+{
+  "name": "gl33cg-tcp-server",
+  "version": "1.0.0",
+  "description": "Servidor TCP para recebimento de dados dos dispositivos GL33CG com protocolo @Track",
+  "main": "dist/server.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "nodemon --exec ts-node src/server.ts",
+    "dev:debug": "nodemon --exec ts-node --inspect src/server.ts",
+    "test:device": "ts-node test/deviceSimulator.ts",
+    "test:database": "ts-node -e \"import('./src/services/dataManager').then(m => m.dataManager.testDatabaseConnection().then(r => console.log('Database:', r ? 'OK' : 'FAILED')))\"",
+    "logs:monitor": "ts-node scripts/logMonitor.ts",
+    "logs:view": "type logs\\application.log",
+    "logs:clear": "del /q logs\\*.log",
+    "watch": "tsc -w",
+    "clean": "rimraf dist"
+  },
+  "keywords": [
+    "gl33cg",
+    "queclink",
+    "@track",
+    "tcp-server",
+    "gps-tracking"
+  ],
+  "author": "Seu Nome",
+  "license": "MIT",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.53.0",
+    "dotenv": "^16.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.8.0",
+    "nodemon": "^3.0.1",
+    "rimraf": "^5.0.5",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.2.2"
+  }
+}
