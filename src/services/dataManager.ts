@@ -346,6 +346,10 @@ export class DataManager {
         heading: locationData.heading,
         altitude: locationData.altitude,
         hdop: locationData.hdop,
+        mcc: locationData.mcc, // ✅ NOVO
+        mnc: locationData.mnc, // ✅ NOVO
+        lac: locationData.lac, // ✅ NOVO
+        cell_id: locationData.cellId, // ✅ NOVO
         battery_level: locationData.batteryLevel,
         gsm_signal: locationData.gsmSignal,
         report_time: this.parseTimestamp(originalMessage.sendTime),
@@ -379,35 +383,28 @@ export class DataManager {
    */
   private parseLocationFromMessage(rawMessage: string): any | null {
     try {
-      // Formato GTFRI: +RESP:GTFRI,protocol,imei,name,,report_id,reserved,number,gps_accuracy,speed,azimuth,altitude,longitude,latitude,utc_time,mcc,mnc,lac,cell_id,reserved,odometer,backup_battery,report_status,count,mileage,hour_meter_count,backup_battery2,adc1,reserved,event_specific,utc_time,count$
-
       const parts = rawMessage
         .replace("+RESP:", "")
         .replace("$", "")
         .split(",");
 
-      if (parts.length < 20) {
+      if (parts.length < 18) {
         return null;
       }
 
-      // ===== parsing GPS fixo =====
-      const hdop = parseFloat(parts[7] ?? "0"); // HDOP
-      const speed = parseFloat(parts[8] ?? "0"); // Speed
-      const heading = parseInt(parts[9] ?? "0", 10); // Azimuth
-      const altitude = parseFloat(parts[10] ?? "0"); // Altitude
-      const longitude = parseFloat(parts[11] ?? "0"); // Longitude
-      const latitude = parseFloat(parts[12] ?? "0"); // Latitude
+      const speed = parseFloat(parts[8] ?? "0");
+      const heading = parseInt(parts[9] ?? "0");
+      const altitude = parseFloat(parts[10] ?? "0");
+      const longitude = parseFloat(parts[11] ?? "0");
+      const latitude = parseFloat(parts[12] ?? "0");
+      const hdop = parseFloat(parts[7] ?? "0");
 
-      // UTC time do GPS (se você quiser usar como report_time)
-      const gpsTimestamp = parts[13] ?? "";
-
-      // ===== parsing célula & bateria =====
-      const mcc = parts[14] || null; // MCC
-      const mnc = parts[15] || null; // MNC
-      const lac = parts[16] || null; // LAC (hex)
-      const cellId = parts[17] || null; // Cell ID (hex)
-      const batteryLevel = parts[19] ? parseFloat(parts[19]) : null; // Battery %
-      const gsmSignal = null; // se não vier no FRI
+      // ✅ CAMPOS CORRIGIDOS - POSIÇÕES CERTAS
+      const mcc = parts[14] ?? ""; // MCC na posição 14
+      const mnc = parts[15] ?? ""; // MNC na posição 15
+      const lac = parts[16] ?? ""; // LAC na posição 16
+      const cellId = parts[17] ?? ""; // Cell ID na posição 17
+      const batteryLevel = parts[19] ? parseFloat(parts[19]) : undefined; // Battery na posição 19
 
       return {
         latitude,
@@ -416,13 +413,12 @@ export class DataManager {
         heading,
         altitude,
         hdop,
-        mcc,
-        mnc,
-        lac,
-        cellId,
         batteryLevel,
-        gsmSignal,
-        gpsTimestamp,
+        gsmSignal: undefined,
+        mcc, // ✅ NOVO
+        mnc, // ✅ NOVO
+        lac, // ✅ NOVO
+        cellId, // ✅ NOVO
       };
     } catch (error) {
       logger.error(
