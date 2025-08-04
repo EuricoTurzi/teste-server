@@ -29,7 +29,8 @@ class GL33CGTcpServer {
    */
   private loadConfig(): ServerConfig {
     return {
-      port: parseInt(process.env.SERVER_PORT || "8080"),
+      // Render usa PORT, mas mantém SERVER_PORT como fallback
+      port: parseInt(process.env.PORT || process.env.SERVER_PORT || "8080"),
       host: process.env.SERVER_HOST || "0.0.0.0",
       enableSack: process.env.ENABLE_SACK === "true",
       sackMode: parseInt(process.env.SACK_MODE || "1"),
